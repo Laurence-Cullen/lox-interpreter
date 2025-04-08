@@ -64,18 +64,27 @@ pub enum Token {
     Eof,
 }
 
-pub fn scan_lines(input: &str) -> Vec<Line> {
-    let mut lines = Vec::new();
+pub fn scan_lines(input: &str) -> Result<Vec<Line>, nom::Err<nom::error::Error<&str>>> {
+    let mut lines: Vec<Line> = Vec::new();
     for line in input.lines() {
-        let (remaining, tokens) = scan_line(line).unwrap();
+        let result = scan_line(line);
 
-        // check remaining is empty
+        // If result is not OK return error
+        if result.is_err() {
+            return Err(result.err().unwrap());
+        }
+
+        let (remaining, tokens) = result?;
+
         if !remaining.is_empty() {
-            eprintln!("Warning: Unparsed input remaining: {}", remaining);
+            return Err(nom::Err::Error(nom::error::Error::new(
+                remaining,
+                nom::error::ErrorKind::NonEmpty,
+            )));
         }
         lines.push(tokens);
     }
-    lines
+    Ok(lines)
 }
 
 /// Use nom to parse lines of lox code and return a vector of tokens.
