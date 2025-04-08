@@ -79,7 +79,6 @@ pub enum TokenType {
 }
 
 /// Use nom to parse lines of lox code and return a vector of tokens.
-
 pub fn scan_line(input: &str) -> Vec<Token> {
     // Check for comment line
     if let Ok((remaining, _)) = comment(input) {
@@ -324,5 +323,44 @@ mod tests {
         let tokens = scan_line(input);
 
         println!("{:?}", tokens);
+    }
+
+    #[test]
+    fn test_scan_line_2() {
+        let input = "var andx = 10;";
+        let tokens = scan_line(input);
+
+        let expected_tokens = vec![
+            Token {
+                token_type: TokenType::Var,
+                lexeme: "var".to_string(),
+                literal: "".to_string(),
+                line: 0,
+            },
+            Token {
+                token_type: TokenType::Identifier,
+                lexeme: "andx".to_string(),
+                literal: "".to_string(),
+                line: 0,
+            },
+            Token {
+                token_type: TokenType::Equal,
+                lexeme: "=".to_string(),
+                literal: "".to_string(),
+                line: 0,
+            },
+            Token {
+                token_type: TokenType::Number,
+                lexeme: "10".to_string(),
+                literal: "10".to_string(),
+                line: 0,
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                lexeme: ";".to_string(),
+                literal: "".to_string(),
+                line: 0,
+            },
+        ];
     }
 }
