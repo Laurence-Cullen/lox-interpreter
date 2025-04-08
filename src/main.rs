@@ -1,28 +1,8 @@
-mod tokens;
 mod parsers;
+mod tokens;
 
+use crate::tokens::scan_line;
 use std::fmt::Debug;
-use crate::tokens::{scan_line, Token};
-
-struct Scanner {
-    source: String,
-    tokens: Vec<Token>,
-}
-
-// impl Scanner {
-//     fn new(source: String) -> Self {
-//         Self { source , tokens: vec![] }
-//     }
-//
-//     fn scan_tokens(&mut self) -> Vec<Token> {
-//         while !self.is_at_end() {
-//             let start = current;
-//             scan_token()
-//         }
-//
-//         self.tokens.push(Token::new(TokenType::Eof, String::new(), String::new(), 0));
-//     }
-// }
 
 struct Lox {
     // Define the structure of the Lox interpreter
@@ -82,8 +62,6 @@ impl Lox {
         println!("Bye!");
     }
 }
-
-
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();

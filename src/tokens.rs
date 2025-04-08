@@ -2,11 +2,15 @@ use crate::parsers::ws;
 use crate::ws_separated;
 use nom::branch::alt;
 use nom::bytes::complete::{is_not, tag};
-use nom::character::complete::{alpha1, alphanumeric0, alphanumeric1};
+use nom::character::complete::{
+    alpha1, alphanumeric0, alphanumeric1, line_ending, not_line_ending,
+};
 use nom::multi::many0;
 use nom::number::complete::double;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
+
+type Line = Vec<Token>;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -40,37 +44,44 @@ pub enum Token {
 
     // Keywords
     And,
-    Class,
-    Else,
-    False,
-    Fun,
-    For,
-    If,
-    Nil,
     Or,
-    Print,
-    Return,
+    Class,
     Super,
     This,
+    Fun,
+    If,
+    Else,
     True,
+    False,
+    Nil,
+    Print,
+    Return,
     Var,
+    For,
     While,
 
+    LineComment(String),
     Eof,
 }
 
+pub fn scan_lines(input: &str) -> Vec<Line> {
+    let mut lines = Vec::new();
+    for line in input.lines() {
+        let (remaining, tokens) = scan_line(line).unwrap();
+
+        // check remaining is empty
+        if !remaining.is_empty() {
+            eprintln!("Warning: Unparsed input remaining: {}", remaining);
+        }
+        lines.push(tokens);
+    }
+    lines
+}
+
 /// Use nom to parse lines of lox code and return a vector of tokens.
-pub fn scan_line(input: &str) -> Vec<Token> {
-    // Check for comment line
-    if let Ok((remaining, _)) = comment(input) {
-        let mut tokens: Vec<Token> = Vec::new();
-        return tokens;
-    };
-
-    // Start while loop
-    let mut remaining = input;
-
-    let (remaining, mut tokens) = many0(alt(ws_separated!((
+pub fn scan_line(input: &str) -> IResult<&str, Vec<Token>> {
+    many0(alt(ws_separated!((
+        line_comment,
         keyword,
         identifier,
         number,
@@ -78,17 +89,13 @@ pub fn scan_line(input: &str) -> Vec<Token> {
         two_char_token,
         single_char_token
     ))))
-    .parse(&mut remaining)
-    .unwrap();
-
-    // Add EOF token
-    tokens.push(Token::Eof);
-
-    tokens
+    .parse(input)
 }
 
-fn comment(input: &str) -> IResult<&str, &str> {
-    delimited(tag("//"), is_not("\n"), tag("\n")).parse(input)
+fn line_comment(input: &str) -> IResult<&str, Token> {
+    let (remaining, comment) =
+        delimited(tag("//"), not_line_ending, many0(line_ending)).parse(input)?;
+    Ok((remaining, Token::LineComment(comment.to_string())))
 }
 
 fn single_char_token(input: &str) -> IResult<&str, Token> {
@@ -238,9 +245,12 @@ mod tests {
     #[test]
     fn test_comment() {
         let input = "// This is a comment\n";
-        let (remaining, comment) = comment(input).unwrap();
+        let (remaining, comment) = line_comment(input).unwrap();
         assert_eq!(remaining, "");
-        assert_eq!(comment, " This is a comment");
+        assert_eq!(
+            comment,
+            Token::LineComment(" This is a comment".to_string())
+        );
     }
 
     #[test]
@@ -254,7 +264,7 @@ mod tests {
     #[test]
     fn test_scan_line_2() {
         let input = "var and2 = 10;";
-        let tokens = scan_line(input);
+        let (remaining, tokens) = scan_line(input).unwrap();
 
         let expected_tokens = vec![
             Token::Var,
@@ -262,7 +272,20 @@ mod tests {
             Token::Equal,
             Token::Number(10.0),
             Token::Semicolon,
-            Token::Eof,
+        ];
+        assert_eq!(tokens, expected_tokens);
+    }
+
+    #[test]
+    fn test_scan_line_3() {
+        let input = "andfunc for;  // This is a comment";
+        let (remaining, tokens) = scan_line(input).unwrap();
+
+        let expected_tokens = vec![
+            Token::Identifier("andfunc".to_string()),
+            Token::For,
+            Token::Semicolon,
+            Token::LineComment(" This is a comment".to_string()),
         ];
         assert_eq!(tokens, expected_tokens);
     }
