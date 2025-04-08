@@ -4,6 +4,9 @@ use nom::character::complete::{alpha1, alphanumeric0};
 use nom::number::complete::float;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
+use nom::multi::many0;
+use crate::parsers::ws;
+use crate::ws_separated;
 
 #[derive(Debug)]
 pub struct Token {
@@ -78,25 +81,34 @@ pub enum TokenType {
 /// Use nom to parse lines of lox code and return a vector of tokens.
 
 pub fn scan_line(input: &str) -> Vec<Token> {
-    let mut tokens = Vec::new();
-
     // Check for comment line
     if let Ok((remaining, _)) = comment(input) {
-        // If it's a comment, we can skip it
-        return vec![]
+        let mut tokens: Vec<Token> = Vec::new();
+        return tokens
     };
 
     // Start while loop
     let mut remaining = input;
 
-    while Some(remaining) {
+    let (remaining, mut tokens) = many0(alt(ws_separated!((
+            keyword,
+            identifier,
+            number,
+            string,
+            two_char_token,
+            single_char_token
+        )))).parse(&mut remaining).unwrap();
 
-    }
-
-
-
-
+    // Add EOF token
+    tokens.push(Token {
+        token_type: TokenType::Eof,
+        lexeme: String::new(),
+        literal: String::new(),
+        line: 0, // Placeholder for line number
+    });
+    tokens
 }
+
 
 fn comment(input: &str) -> IResult<&str, &str> {
     delimited(tag("//"), is_not("\n"), tag("\n")).parse(input)
@@ -115,8 +127,9 @@ fn single_char_token(input: &str) -> IResult<&str, Token> {
         tag(";"),
         tag("/"),
         tag("*"),
+        tag("="),
     ))
-    .parse(input)?;
+        .parse(input)?;
 
     let token_type = match lexeme {
         "(" => TokenType::LeftParen,
@@ -130,6 +143,7 @@ fn single_char_token(input: &str) -> IResult<&str, Token> {
         ";" => TokenType::Semicolon,
         "/" => TokenType::Slash,
         "*" => TokenType::Star,
+        "=" => TokenType::Equal,
         _ => unreachable!(),
     };
 
@@ -302,5 +316,13 @@ mod tests {
         let (remaining, comment) = comment(input).unwrap();
         assert_eq!(remaining, "");
         assert_eq!(comment, " This is a comment");
+    }
+
+    #[test]
+    fn test_scan_line() {
+        let input = "var x <= 10;";
+        let tokens = scan_line(input);
+
+        println!("{:?}", tokens);
     }
 }
