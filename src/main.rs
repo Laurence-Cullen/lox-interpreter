@@ -2,7 +2,6 @@ mod tokens;
 mod parsers;
 
 use std::fmt::Debug;
-use tokens::TokenType;
 use crate::tokens::{scan_line, Token};
 
 struct Scanner {
