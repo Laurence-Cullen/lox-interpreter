@@ -15,7 +15,7 @@ type Line = Vec<Token>;
 #[derive(Debug, PartialEq)]
 pub enum Token {
     // Single character tokens
-    LeftParen,
+    I,
     RightParen,
     LeftBrace,
     RightBrace,
@@ -125,7 +125,7 @@ fn single_char_token(input: &str) -> IResult<&str, Token> {
     .parse(input)?;
 
     let token_type = match lexeme {
-        "(" => Token::LeftParen,
+        "(" => Token::I,
         ")" => Token::RightParen,
         "{" => Token::LeftBrace,
         "}" => Token::RightBrace,
@@ -205,7 +205,6 @@ fn keyword(input: &str) -> IResult<&str, Token> {
     Ok((remaining, token_type))
 }
 
-// tests
 #[cfg(test)]
 mod tests {
     use super::*;
