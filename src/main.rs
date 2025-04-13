@@ -1,6 +1,7 @@
-mod parsers;
+mod parser_utils;
 mod tokens;
 mod ast;
+mod parser;
 
 use crate::tokens::scan_line;
 use std::fmt::Debug;

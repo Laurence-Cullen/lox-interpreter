@@ -13,19 +13,6 @@ where
 
 /// Takes in a tuple of parsers with different return types
 /// and returns a tuple of parsers each wrapped with `ws`.
-///
-/// # Example
-/// ```
-/// use nom::character::complete::u32;
-/// use nom::number::complete::float;
-/// use nom::Parser;
-/// use idf_parser::ws_separated;
-/// use idf_parser::primitives::ws;
-///
-/// let input = "0 100.0 200.0 45.0";
-///
-/// let (remaining, (label, x, y, angle)) = ws_separated!((u32, float, float, float)).parse(input).unwrap();
-/// ```
 #[macro_export]
 macro_rules! ws_separated {
     (($($parser:expr),+)) => {

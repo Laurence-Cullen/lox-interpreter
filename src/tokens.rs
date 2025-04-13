@@ -1,4 +1,4 @@
-use crate::parsers::ws;
+use crate::parser_utils::ws;
 use crate::ws_separated;
 use nom::branch::alt;
 use nom::bytes::complete::{is_not, tag};
