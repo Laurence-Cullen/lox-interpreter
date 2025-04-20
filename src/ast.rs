@@ -5,6 +5,9 @@ pub trait Expr {
     fn eval(&self) -> Box<dyn Expr>;
 }
 
+/// Rust compiler AST
+/// https://doc.rust-lang.org/beta/nightly-rustc/src/rustc_ast/ast.rs.html#1-3821
+
 pub struct Binary {
     lhs: Box<dyn Expr>,
     op: Token,
@@ -36,71 +39,17 @@ impl Expr for Binary {
 
         // If lhs and rhs are both NumberLiterals add
         match (lhs, rhs) {
-            (Expressions::Number(ref l_val), Expressions::Number(ref r_val)) => {
-                match self.op {
-                    Token::Plus => {
-                        NumberLiteral::new(l_val.value + r_val.value)
-                    },
-                    Token::Minus => {
-                        NumberLiteral::new(l_val.value - r_val.value)
-                    },
-                    Token::Star => {
-                        NumberLiteral::new(l_val.value * r_val.value)
-                    },
-                    Token::Slash => {
-                        NumberLiteral::new(l_val.value / r_val.value)
-                    },
-                    _ => unreachable!(),
-                }
-            }
+            (Expressions::Number(ref l_val), Expressions::Number(ref r_val)) => match self.op {
+                Token::Plus => NumberLiteral::new(l_val.value + r_val.value),
+                Token::Minus => NumberLiteral::new(l_val.value - r_val.value),
+                Token::Star => NumberLiteral::new(l_val.value * r_val.value),
+                Token::Slash => NumberLiteral::new(l_val.value / r_val.value),
+                _ => unreachable!(),
+            },
             _ => unreachable!(),
-            }
         }
     }
-
-
-// pub struct Call {
-//     callee: Box<dyn Expr>,
-//     paren: Token,
-//     args: Vec<Box<dyn Expr>>,
-// }
-//
-// impl Call {
-//     fn new(callee: Box<dyn Expr>, paren: Token, args: Vec<Box<dyn Expr>>) -> Box<Self> {
-//         Box::new(Call {
-//             callee,
-//             args,
-//             paren,
-//         })
-//     }
-// }
-//
-// impl Expr for Call {
-//     fn print(&self) -> String {
-//         let mut args_str = "".to_string();
-//
-//         for arg in &self.args {
-//             args_str += format!("{}, ", arg.print()).as_ref();
-//         }
-//         format!("{}({})", self.callee.print(), args_str)
-//     }
-//     fn eval(&self) -> Box<dyn Expr> {
-//
-//     }
-// }
-
-// struct Get {
-//     object: Box<dyn Expr>,
-//     name: Token,
-// }
-// impl Expr for Get {
-//     fn print(&self) -> String {
-//         match self.name {
-//             Token::Identifier(ref name) => format!("{}.{}", self.object.print(), name),
-//             _ => unreachable!(),
-//         }
-//     }
-// }
+}
 
 pub struct Grouping {
     expr: Box<dyn Expr>,
@@ -211,48 +160,19 @@ impl Expr for Logical {
         match (left, right) {
             (Expressions::Number(ref l_val), Expressions::Number(ref r_val)) => {
                 match self.operator {
-                    Token::BangEqual => {
-                        BooleanLiteral::new(l_val.value != r_val.value)
-                    }
-                    Token::EqualEqual => {
-                        BooleanLiteral::new(l_val.value == r_val.value)
-                    }
-                    Token::Greater => {
-                        BooleanLiteral::new(l_val.value > r_val.value)
-                    }
-                    Token::GreaterEqual => {
-                        BooleanLiteral::new(l_val.value >= r_val.value)
-                    }
-                    Token::Less => {
-                        BooleanLiteral::new(l_val.value <= r_val.value)
-                    }
-                    Token::LessEqual => {
-                        BooleanLiteral::new(l_val.value <= r_val.value)
-                    },
+                    Token::BangEqual => BooleanLiteral::new(l_val.value != r_val.value),
+                    Token::EqualEqual => BooleanLiteral::new(l_val.value == r_val.value),
+                    Token::Greater => BooleanLiteral::new(l_val.value > r_val.value),
+                    Token::GreaterEqual => BooleanLiteral::new(l_val.value >= r_val.value),
+                    Token::Less => BooleanLiteral::new(l_val.value <= r_val.value),
+                    Token::LessEqual => BooleanLiteral::new(l_val.value <= r_val.value),
                     _ => unreachable!(),
                 }
-            },
+            }
             _ => unreachable!(),
         }
     }
 }
-
-// struct Super {
-//     keyword: Token,
-//     method: Token,
-// }
-//
-// impl Expr for Super {
-//     fn print() {}
-// }
-//
-// struct This {
-//     keyword: Token,
-// }
-//
-// impl Expr for This {
-//     fn print() {}
-// }
 
 struct Unary {
     operator: Token,
@@ -277,25 +197,21 @@ impl Expr for Unary {
     fn eval(&self) -> Box<dyn Expr> {
         let right = self.right.eval();
 
-        match right {
-            Expressions::Number(ref val) => {
-                match self.operator {
-                    Token::Minus => {
-                        NumberLiteral::new(-val.value)
-                    },
-                    _ => unreachable!(),
-                }
-            },
-            Expressions::Boolean(ref val) => {
-                match self.operator {
-                    Token::Bang => {
-                        BooleanLiteral::new(!val.value)
-                    },
-                    _ => unreachable!(),
+        match &self.operator {
+            Token::Minus => {
+                if let Ok(num_right) = right.downcast::<NumberLiteral>() {
+                    return NumberLiteral::new(-num_right.value);
                 }
             }
+            Token::Bang => {
+                if let Ok(bool_right) = right.downcast::<BooleanLiteral>() {
+                    return BooleanLiteral::new(!bool_right.value);
+                }
+            }
+            _ => {}
         }
 
+        unreachable!("Unsupported unary operation")
     }
 }
 
